@@ -11,10 +11,10 @@ contract Gouvernance is Ownable, ReentrancyGuard, ERC20 {
     uint256 immutable tokenVote = 2;
     uint256 numberVote = 0;
 
-    constructor(uint256 _supllyToken, uint256 _priceToken)
-        ERC20("TokenVote", "TKV")
-        Ownable(msg.sender)
-    {
+    constructor(
+        uint256 _supllyToken,
+        uint256 _priceToken
+    ) ERC20("TokenVote", "TKV") Ownable(msg.sender) {
         _mint(msg.sender, _supllyToken);
         supplyToken = _supllyToken;
         priceToken = _priceToken;
@@ -31,7 +31,6 @@ contract Gouvernance is Ownable, ReentrancyGuard, ERC20 {
     }
 
     struct user {
-        uint256 votes;
         uint256 token;
         string decision;
         uint256 votePositif;
@@ -41,6 +40,7 @@ contract Gouvernance is Ownable, ReentrancyGuard, ERC20 {
     }
 
     mapping(address => user) Users;
+    mapping(address => mapping(address => bool)) public votes;
 
     function buyToken(uint256 _amount) public payable nonReentrant {
         require(_amount <= supplyToken, "Amount exceeds supply");
@@ -51,11 +51,9 @@ contract Gouvernance is Ownable, ReentrancyGuard, ERC20 {
         emit _buyToken(msg.sender, _amount);
     }
 
-    function MakeADecision(string memory _decision)
-        public
-        payable
-        nonReentrant
-    {
+    function MakeADecision(
+        string memory _decision
+    ) public payable nonReentrant {
         user storage currentUser = Users[msg.sender];
 
         string memory userDecision = currentUser.decision;
@@ -79,9 +77,9 @@ contract Gouvernance is Ownable, ReentrancyGuard, ERC20 {
             "Time done"
         );
 
-       string memory result = currentUser.votePositif > currentUser.voteNegatif
-        ? "Decision accepted"
-        : "Decision not accepted";
+        string memory result = currentUser.votePositif > currentUser.voteNegatif
+            ? "Decision accepted"
+            : "Decision not accepted";
 
         currentUser.decision = "";
         currentUser.TimeToVote = 0;
@@ -93,14 +91,17 @@ contract Gouvernance is Ownable, ReentrancyGuard, ERC20 {
     function voteYes(address _decision) public payable nonReentrant {
         user storage currentUser = Users[msg.sender];
         require(currentUser.token > msg.value);
-        require(currentUser.votes > 0, "You have already voted");
+        require(
+            !votes[msg.sender][_decision],
+            "You have already voted for this contribution."
+        );
         require(
             Users[_decision].haveDecision,
             "this adress have no have active decition"
         );
         uint256 Vote = msg.value * tokenVote;
         Users[_decision].votePositif += Vote;
-        currentUser.votes++;
+        votes[msg.sender][_decision] = true;
         currentUser.token -= msg.value;
         emit _voted(msg.sender);
     }
@@ -108,10 +109,14 @@ contract Gouvernance is Ownable, ReentrancyGuard, ERC20 {
     function voteNo(address _decision) public payable nonReentrant {
         user storage currentUser = Users[msg.sender];
         require(currentUser.token > msg.value);
-        require(currentUser.votes > 0, "You have already voted");
+        require(
+            !votes[msg.sender][_decision],
+            "You have already voted for this contribution."
+        );
+
         uint256 Vote = msg.value * tokenVote;
         Users[_decision].voteNegatif += Vote;
-        currentUser.votes++;
+        votes[msg.sender][_decision] = true;
         currentUser.token -= msg.value;
         emit _voted(msg.sender);
     }
