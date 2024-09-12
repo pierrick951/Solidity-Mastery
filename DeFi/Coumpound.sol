@@ -96,6 +96,7 @@ contract Coumpound is ERC20, Ownable, ReentrancyGuard {
         require( (CurrentUser.collateral * 100) / CurrentUser.amountLoan < 120, "Collateralization ratio is above the liquidation threshold");
         payable(address(this)).transfer(CurrentUser.collateral);
         CurrentUser.hasloan = false;
+        CurrentUser.amountLoan = 0;
         _burn(msg.sender, CurrentUser.collateral);
     }
 
@@ -110,7 +111,7 @@ contract Coumpound is ERC20, Ownable, ReentrancyGuard {
     }
 
     function getFound() public payable onlyOwner nonReentrant {
-        require(address(this).balance >= 0 , "No found to tranfer Boss");
+        require(address(this).balance > 0 , "No found to tranfer Boss");
         payable(msg.sender).transfer(address(this).balance);
     }
 
