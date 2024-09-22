@@ -9,6 +9,7 @@ interface IOldContract {
     function getAllAddresses() external view returns (address[] memory);
 }
 
+
 contract AutoMigrateContract is Ownable,  ReentrancyGuard {
     uint256 public constant BATCH_SIZE = 150;
     IOldContract public oldContract;
